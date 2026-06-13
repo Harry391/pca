@@ -1,0 +1,9 @@
+function model = train_pca_svm_model(trainDir, pcaDim, svmC, options)
+%TRAIN_PCA_SVM_MODEL Placeholder training contract.
+
+    model = struct('status', 'todo', 'message', 'train_pca_svm_model not implemented', ...
+        'labels', {{}}, 'imageSize', [], 'meanFace', [], 'eigenfaces', [], ...
+        'pcaDim', pcaDim, 'svmC', svmC, 'classifier', [], 'trainSummary', [], ...
+        'trainDir', trainDir, 'options', options);
+end
+
