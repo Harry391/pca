@@ -7,7 +7,7 @@
 你的核心任务不是做界面，而是保证：
 
 1. 训练集和测试集划分符合验收要求。
-2. PCA + SVM 链路稳定可复现。
+2. 手写 PCA + 手写 SVM 链路稳定可复现。
 3. 单张识别、全量识别、实时识别接口统一。
 4. 结果能直接被 A 同学拿去显示。
 
@@ -39,8 +39,8 @@ integration/ 中偏模型调用的部分
 必须完成：
 
 1. 训练前统一预处理
-2. PCA 降维训练
-3. SVM 分类训练
+2. 手写 PCA 降维训练
+3. 手写 SVM 分类训练
 4. 模型保存和加载
 
 ### 3.3 预测部分
@@ -71,6 +71,7 @@ integration/ 中偏模型调用的部分
 3. 图像是先灰度化再 PCA，还是先做其它归一化
 4. `predict_face_identity` 的返回字段
 5. `run_batch_test` 的结果表字段
+6. 手写 SVM 的多分类策略，例如 `one-vs-rest`
 
 如果必须改，就要同步通知 A 同学。
 
@@ -93,9 +94,15 @@ model.meanFace
 model.eigenfaces
 model.pcaDim
 model.svmC
-model.classifier
+model.svmParams
 model.trainSummary
 ```
+
+你必须保证：
+
+1. `model.svmParams` 只保存你们自己手写 SVM 的参数。
+2. 不允许返回 MATLAB 现成分类器对象。
+3. 如果做多分类，参数结构里要能看出 `one-vs-rest` 或 `one-vs-one` 的组织方式。
 
 ### 5.2 单张识别接口
 
@@ -210,8 +217,8 @@ manifest.status
 
 职责：
 
-1. 训练 PCA
-2. 训练 SVM
+1. 训练手写 PCA
+2. 训练手写 SVM
 3. 返回模型结构体
 
 `ml/predict_face_identity.m`
@@ -266,9 +273,14 @@ manifest.status
 把模型离线跑通：
 
 1. 统一预处理
-2. PCA
-3. SVM
+2. 手写 PCA
+3. 手写 SVM
 4. 单张预测
+
+这一阶段必须避免：
+
+1. 调用现成 PCA 分类接口代替主算法
+2. 调用现成 SVM 分类器代替主算法
 
 ### 第四步
 
@@ -313,6 +325,7 @@ manifest.status
 3. 全量识别没有总体准确率和逐图结果表
 4. 平均脸和特征脸无法展示
 5. 实时识别接口和静态识别接口不统一
+6. PCA 或 SVM 实际上调用了现成库实现
 
 ## 10. 你最终要交付什么
 
@@ -326,4 +339,3 @@ manifest.status
 8. 特征脸
 9. 精度和耗时统计表
 10. 创新小项目算法部分
-
