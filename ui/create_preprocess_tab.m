@@ -26,8 +26,8 @@ function handles = create_preprocess_tab(parentTab, theme, assets)
     handles.CenterPanel = centerPanel;
     handles.RightPanel = rightPanel;
 
-    leftGrid = uigridlayout(leftPanel, [6 2]);
-    leftGrid.RowHeight = {42, 42, 42, 42, 220, '1x'};
+    leftGrid = uigridlayout(leftPanel, [5 2]);
+    leftGrid.RowHeight = {42, 42, 42, 220, '1x'};
     leftGrid.ColumnWidth = {'1x', '1x'};
     leftGrid.Padding = [14 18 14 14];
     leftGrid.RowSpacing = 12;
@@ -41,21 +41,11 @@ function handles = create_preprocess_tab(parentTab, theme, assets)
     handles.StartCameraButton = cuteButton(leftGrid, '启动摄像头', theme, 'green', 3, 1);
     handles.StopCameraButton = cuteButton(leftGrid, '停止摄像头', theme, 'green', 3, 2);
 
-    displayLabel = uilabel(leftGrid, 'Text', '图像显示选择', 'FontWeight', 'bold', 'FontColor', theme.colors.ink);
-    displayLabel.Layout.Row = 4;
-    displayLabel.Layout.Column = 1;
-    handles.DisplayModeDropDown = uidropdown(leftGrid, ...
-        'Items', {'原图', '灰度图', '均衡图', '校准图'}, ...
-        'Value', '原图', ...
-        'BackgroundColor', theme.colors.buttonGreen);
-    handles.DisplayModeDropDown.Layout.Row = 4;
-    handles.DisplayModeDropDown.Layout.Column = 2;
-
     decorationPanel = uipanel(leftGrid, ...
         'BackgroundColor', [0.68 0.92 0.67], ...
         'BorderType', 'line', ...
         'BorderColor', theme.colors.panelLine);
-    decorationPanel.Layout.Row = 5;
+    decorationPanel.Layout.Row = 4;
     decorationPanel.Layout.Column = [1 2];
     decorationGrid = uigridlayout(decorationPanel, [1 1]);
     decorationGrid.Padding = [0 0 0 0];
@@ -63,7 +53,7 @@ function handles = create_preprocess_tab(parentTab, theme, assets)
     handles.MascotInfo = uiimage(decorationGrid, 'ImageSource', assets.leftCorner, 'ScaleMethod', 'fit');
 
     infoPanel = create_cute_panel(leftGrid, 'Image Info Block', theme, [0.68 0.92 0.67]);
-    infoPanel.Layout.Row = 6;
+    infoPanel.Layout.Row = 5;
     infoPanel.Layout.Column = [1 2];
     infoGrid = uigridlayout(infoPanel, [1 1]);
     infoGrid.RowHeight = {'1x'};
@@ -149,8 +139,8 @@ function handles = create_preprocess_tab(parentTab, theme, assets)
     transformPanel = create_cute_panel(rightGrid, 'image transform block', theme, [0.88 0.96 1.00]);
     transformPanel.Layout.Row = 5;
     transformPanel.Layout.Column = [1 2];
-    transformGrid = uigridlayout(transformPanel, [5 3]);
-    transformGrid.RowHeight = {'1x', '1x', '1x', '1x', '1x'};
+    transformGrid = uigridlayout(transformPanel, [6 3]);
+    transformGrid.RowHeight = {'1x', '1x', '1x', '1x', '1x', '1x'};
     transformGrid.ColumnWidth = {'1x', 70, 90};
     transformGrid.Padding = [10 8 10 10];
     transformGrid.RowSpacing = 8;
@@ -166,15 +156,10 @@ function handles = create_preprocess_tab(parentTab, theme, assets)
     handles.RotateEdit = editField(transformGrid, '0', 4);
     handles.BrightnessButton = cuteButton(transformGrid, '图像亮度', theme, 'blue', 5, 1);
     handles.BrightnessEdit = editField(transformGrid, '0', 5);
+    handles.RestoreButton = cuteButton(transformGrid, '恢复原图', theme, 'blue', 6, [1 3]);
 
-    handles.FlipButton = cuteButton(rightGrid, '图像翻转', theme, 'blue', 6, 1);
-    handles.FlipModeGroup = uibuttongroup(rightGrid, ...
-        'BackgroundColor', [0.88 0.96 1.00], ...
-        'BorderColor', theme.colors.panelLine);
-    handles.FlipModeGroup.Layout.Row = 6;
-    handles.FlipModeGroup.Layout.Column = 2;
-    handles.FlipVerticalRadio = uiradiobutton(handles.FlipModeGroup, 'Text', '垂直', 'Position', [18 42 60 22], 'Value', true);
-    handles.FlipHorizontalRadio = uiradiobutton(handles.FlipModeGroup, 'Text', '水平', 'Position', [18 14 60 22]);
+    handles.HorizontalFlipButton = cuteButton(rightGrid, '水平翻转', theme, 'blue', 6, 1);
+    handles.VerticalFlipButton = cuteButton(rightGrid, '垂直翻转', theme, 'blue', 6, 2);
 end
 
 function btn = cuteButton(parent, text, theme, variant, row, col)
