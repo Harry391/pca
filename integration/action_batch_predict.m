@@ -16,7 +16,7 @@ function result = action_batch_predict(appState, params)
             return;
         end
 
-        trainDir = fullfile(appState.rootDir, 'data', 'train');
+        trainDir = get_field_or(appState, 'defaultTrainDir', fullfile(appState.rootDir, 'data', 'train'));
         if ~isfolder(trainDir)
             trainDir = fullfile(appState.rootDir, 'data');
         end
@@ -41,7 +41,7 @@ function result = action_batch_predict(appState, params)
 end
 
 function testDir = pick_test_dir(appState)
-    defaultDir = fullfile(appState.rootDir, 'data', 'test');
+    defaultDir = get_field_or(appState, 'defaultTestDir', fullfile(appState.rootDir, 'data', 'test'));
     if ~isfolder(defaultDir)
         defaultDir = fullfile(appState.rootDir, 'data');
     end

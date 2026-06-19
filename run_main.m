@@ -8,8 +8,15 @@ function appState = run_main()
     addpath(genpath(fullfile(rootDir, 'ml')));
     addpath(genpath(fullfile(rootDir, 'integration')));
 
+    cfg = app_config(rootDir);
+
     appState = struct();
     appState.rootDir = rootDir;
+    appState.config = cfg;
+    appState.rawFaceDir = cfg.rawFaceDir;
+    appState.processedFaceDir = cfg.processedFaceDir;
+    appState.defaultTrainDir = cfg.defaultTrainDir;
+    appState.defaultTestDir = cfg.defaultTestDir;
     appState.currentImage = [];
     appState.currentImagePath = "";
     appState.currentGrayImage = [];

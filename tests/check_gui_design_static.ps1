@@ -83,5 +83,12 @@ Assert-FileContains 'integration\action_static_predict.m' 'predict_face_identity
 Assert-FileContains 'integration\action_batch_predict.m' 'run_batch_test' 'Batch action must call run_batch_test.'
 Assert-FileContains 'integration\action_realtime_predict.m' 'detect_face' 'Realtime action must detect faces.'
 Assert-FileContains 'integration\action_realtime_predict.m' 'predict_face_identity' 'Realtime action must call predict_face_identity.'
+Assert-FileContains 'config\app_config.m' 'rawFaceDir' 'App config must expose the raw face database directory.'
+Assert-FileContains 'config\app_config.m' 'processedFaceDir' 'App config must expose the processed face image directory.'
+Assert-FileContains 'config\app_config.m' 'final_result' 'App config must know the final_result location.'
+Assert-FileContains 'config\app_config.m' '人脸识别' 'App config must know the 人脸识别 location.'
+Assert-FileContains 'integration\action_static_predict.m' 'defaultTrainDir' 'Static prediction must use configured default training directory.'
+Assert-FileContains 'integration\action_batch_predict.m' 'defaultTestDir' 'Batch prediction must use configured default test directory.'
+Assert-FileContains 'integration\action_realtime_predict.m' 'defaultTrainDir' 'Realtime prediction must use configured default training directory.'
 
 Write-Output 'GUI design static checks passed.'

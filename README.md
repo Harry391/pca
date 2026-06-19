@@ -37,3 +37,12 @@ run_main
 6. Open `人脸识别` and use single, batch, realtime, average-face, and eigenface controls after the `ml/` interfaces are implemented.
 
 Camera capture uses MATLAB `webcam`. Face detection uses `vision.CascadeObjectDetector` when Computer Vision Toolbox is available. If a dependency or B-side algorithm is missing, the GUI reports the status in the page instead of crashing.
+
+## Dataset Paths
+
+The GUI resolves the course data relative to the parent folder of this project:
+
+- Raw face database: `../人脸识别`
+- Preprocessed face images: `../final_result/final_result` when present, otherwise `../final_result`
+
+The A-side integration uses the preprocessed face directory as the default train/test directory for B-side PCA/SVM calls.

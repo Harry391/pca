@@ -45,7 +45,7 @@ function model = ensure_model(appState, params)
         return;
     end
 
-    trainDir = get_param_or(params, 'trainDir', fullfile(appState.rootDir, 'data', 'train'));
+    trainDir = get_param_or(params, 'trainDir', get_field_or(appState, 'defaultTrainDir', fullfile(appState.rootDir, 'data', 'train')));
     if ~isfolder(trainDir)
         trainDir = fullfile(appState.rootDir, 'data');
     end

@@ -4,6 +4,10 @@ function check_preprocess_contracts()
     rootDir = fileparts(fileparts(mfilename('fullpath')));
     addpath(genpath(rootDir));
 
+    cfg = app_config(rootDir);
+    assert(endsWith(string(cfg.rawFaceDir), "人脸识别"), 'rawFaceDir should point to 人脸识别.');
+    assert(contains(string(cfg.processedFaceDir), "final_result"), 'processedFaceDir should point to final_result.');
+
     rgb = uint8(ones(80, 60, 3) .* 180);
     faceInfo = struct( ...
         'status', "ok", ...
@@ -21,6 +25,8 @@ function check_preprocess_contracts()
 
     appState = struct();
     appState.rootDir = rootDir;
+    appState.defaultTrainDir = cfg.defaultTrainDir;
+    appState.defaultTestDir = cfg.defaultTestDir;
     appState.currentImage = rgb;
     appState.currentCameraFrame = [];
     appState.camera = [];
