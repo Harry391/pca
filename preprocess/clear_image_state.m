@@ -4,7 +4,11 @@ function state = clear_image_state(state)
     state.currentImage = [];
     state.currentImagePath = "";
     state.currentGrayImage = [];
+    state.currentProcessedImage = [];
     state.currentFaceBox = [];
+    state.currentFaceInfo = struct();
+    state.currentAlignInfo = struct();
     state.currentAlignedFace = [];
+    state.currentCameraFrame = [];
 end
 
