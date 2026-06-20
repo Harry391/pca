@@ -1,11 +1,11 @@
 function result = action_realtime_predict(appState, params)
-%ACTION_REALTIME_PREDICT Capture or reuse a frame, detect, align, and predict.
+%ACTION_REALTIME_PREDICT Reuse the current frame/image, detect, align, and predict.
 
     if nargin < 2 || isempty(params)
         params = struct();
     end
 
-    result = struct('status', "error", 'message', "实时识别未开始。", 'appState', [], ...
+    result = struct('status', "error", 'message', "当前图像识别未开始。", 'appState', [], ...
         'sourceImage', [], 'faceImage', [], 'singleText', {{}});
 
     try
@@ -51,14 +51,14 @@ function result = action_realtime_predict(appState, params)
         appState.lastReplayPackage = export_replay_state(frame, faceInfo, alignInfo);
 
         result.status = string(get_field_or(predictResult, 'status', "ok"));
-        result.message = string(get_field_or(predictResult, 'message', "实时识别完成。"));
+        result.message = string(get_field_or(predictResult, 'message', "当前图像识别完成。"));
         result.appState = appState;
         result.sourceImage = frame;
         result.faceImage = alignInfo.alignedFace;
         result.singleText = build_single_text(predictResult);
     catch ME
         result.status = "error";
-        result.message = "实时识别失败: " + string(ME.message);
+        result.message = "当前图像识别失败: " + string(ME.message);
     end
 end
 
@@ -77,10 +77,10 @@ function [frame, message] = get_realtime_frame(appState)
     end
     if isfield(appState, 'currentImage') && ~isempty(appState.currentImage)
         frame = appState.currentImage;
-        message = "使用当前输入图像作为实时识别帧。";
+        message = "使用当前输入图像作为识别帧。";
         return;
     end
-    message = "没有可用于实时识别的图像或摄像头帧。";
+    message = "没有可用于识别的图像或摄像头帧。";
 end
 
 function model = ensure_model(appState, params)

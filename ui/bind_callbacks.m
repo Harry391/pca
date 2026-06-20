@@ -29,11 +29,10 @@ function bind_callbacks(handles)
     rec.TrainButton.ButtonPushedFcn = @(~, ~) on_train_model(handles);
     rec.BatchTestButton.ButtonPushedFcn = @(~, ~) on_recognition_action(handles, '测试集全量识别', @action_batch_predict);
     rec.StaticPredictButton.ButtonPushedFcn = @(~, ~) on_recognition_action(handles, '选择单张测试图识别', @action_static_predict);
-    rec.RealtimePredictButton.ButtonPushedFcn = @(~, ~) on_recognition_action(handles, '实时识别', @action_realtime_predict);
-    rec.StopRealtimeButton.ButtonPushedFcn = @(~, ~) set_rec_status(handles, '状态：实时识别已请求停止。');
+    rec.RealtimePredictButton.ButtonPushedFcn = @(~, ~) on_recognition_action(handles, '识别当前图像 / 摄像头帧', @action_realtime_predict);
     rec.AverageFaceButton.ButtonPushedFcn = @(~, ~) on_average_face(handles);
     rec.EigenfaceButton.ButtonPushedFcn = @(~, ~) on_eigenfaces(handles);
-    rec.ReplayToPreprocessButton.ButtonPushedFcn = @(~, ~) on_recognition_action(handles, '送入预处理页复现', @action_replay_to_preprocess);
+    rec.ReplayToPreprocessButton.ButtonPushedFcn = @(~, ~) on_recognition_action(handles, '查看预处理过程', @action_replay_to_preprocess);
 end
 
 function on_import_image(handles)
@@ -641,7 +640,7 @@ function apply_recognition_result(handles, result, actionName)
     if isfield(result, 'faceImage') && ~isempty(result.faceImage)
         update_axes_image(handles.Recognition.FaceAxes, result.faceImage, '识别人脸');
     end
-    if string(actionName) == "送入预处理页复现" && ...
+    if string(actionName) == "查看预处理过程" && ...
             isfield(result, 'rawFrame') && ~isempty(result.rawFrame)
         handles.TabGroup.SelectedTab = handles.Preprocess.Parent;
         update_axes_image(handles.Preprocess.InputAxes, result.rawFrame, '拍摄 / 输入原图');

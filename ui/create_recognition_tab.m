@@ -54,11 +54,10 @@ function handles = create_recognition_tab(parentTab, theme, assets, params)
     handles.TrainButton = cuteButton(leftGrid, '训练 / 重新训练模型', theme, 'green', 3, [1 2]);
     handles.BatchTestButton = cuteButton(leftGrid, '测试集全量识别', theme, 'green', 4, [1 2]);
     handles.StaticPredictButton = cuteButton(leftGrid, '选择单张测试图识别', theme, 'green', 5, [1 2]);
-    handles.RealtimePredictButton = cuteButton(leftGrid, '实时识别', theme, 'green', 6, 1);
-    handles.StopRealtimeButton = cuteButton(leftGrid, '停止实时识别', theme, 'green', 6, 2);
+    handles.RealtimePredictButton = cuteButton(leftGrid, '识别当前图像 / 摄像头帧', theme, 'green', 6, [1 2]);
     handles.AverageFaceButton = cuteButton(leftGrid, '显示平均脸', theme, 'green', 7, 1);
     handles.EigenfaceButton = cuteButton(leftGrid, '显示特征脸', theme, 'green', 7, 2);
-    handles.ReplayToPreprocessButton = cuteButton(leftGrid, '送入预处理页复现', theme, 'green', 8, [1 2]);
+    handles.ReplayToPreprocessButton = cuteButton(leftGrid, '查看预处理过程', theme, 'green', 8, [1 2]);
 
     hint = uilabel(leftGrid, ...
         'Text', '验收顺序：全量测试 -> 单张测试 -> 实时采集 -> PCA/SVM 展示', ...
