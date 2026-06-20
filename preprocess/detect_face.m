@@ -23,6 +23,13 @@ function faceInfo = detect_face(img, options)
     faceInfo.landmarks = struct();
     faceInfo.message = '';
 
+    if nargin < 1 || isempty(img)
+        faceInfo.status = 'empty_input';
+        faceInfo.message = '没有可检测的图像。';
+        return;
+    end
+
+    try
     gray = convert_to_gray(img);
     gray = im2uint8_local(gray);
     color = ensure_rgb(img);
@@ -48,6 +55,10 @@ function faceInfo = detect_face(img, options)
     faceInfo.faceColorImage = faceColor;
     faceInfo.landmarks = landmarks;
     faceInfo.message = sprintf('%s | %s', faceMessage, landmarks.message);
+    catch ME
+        faceInfo.status = 'error';
+        faceInfo.message = ['人脸检测失败: ', ME.message];
+    end
 end
 
 function box = shrink_to_inner_face(box, imageSize, trim)

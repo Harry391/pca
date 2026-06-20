@@ -8,14 +8,33 @@ function appState = run_main()
     addpath(genpath(fullfile(rootDir, 'ml')));
     addpath(genpath(fullfile(rootDir, 'integration')));
 
+    cfg = app_config(rootDir);
+
     appState = struct();
     appState.rootDir = rootDir;
+    appState.config = cfg;
+    appState.rawFaceDir = cfg.rawFaceDir;
+    appState.processedFaceDir = cfg.processedFaceDir;
+    appState.defaultTrainDir = cfg.defaultTrainDir;
+    appState.defaultTestDir = cfg.defaultTestDir;
+    appState.defaultModelPath = cfg.defaultModelPath;
     appState.currentImage = [];
     appState.currentImagePath = "";
+    appState.currentPreprocessBaseImage = [];
+    appState.currentPreprocessBaseLabel = "";
+    appState.currentRestoreImage = [];
+    appState.currentRestoreLabel = "";
     appState.currentGrayImage = [];
+    appState.currentProcessedImage = [];
     appState.currentFaceBox = [];
+    appState.currentFaceInfo = struct();
+    appState.currentFaceRoi = [];
+    appState.currentFaceRoiListeners = [];
+    appState.currentAlignInfo = struct();
     appState.currentAlignedFace = [];
     appState.currentCameraFrame = [];
+    appState.camera = [];
+    appState.cameraTimer = [];
     appState.lastReplayPackage = struct();
     appState.model = struct();
     appState.batchResult = struct();
@@ -24,10 +43,16 @@ function appState = run_main()
     appState.datasetManifest = struct();
 
     params = default_params();
+    theme = get_ui_theme();
+    assets = load_ui_assets(rootDir);
     appState.defaultPcaDim = params.defaultPcaDim;
     appState.defaultSvmC = params.defaultSvmC;
+    appState.defaultSvmMaxEpochs = params.svmMaxEpochs;
+    appState.defaultSvmLearningRate = params.svmLearningRate;
+    appState.defaultSvmLearningRateDecay = params.svmLearningRateDecay;
 
-    handles = create_main_window(appState, params);
+    handles = create_main_window(appState, params, theme, assets);
+    handles.Figure.UserData = appState;
     bind_callbacks(handles);
 
     if nargout == 0

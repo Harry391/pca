@@ -8,6 +8,9 @@ function alignInfo = align_face(img, faceInfo, options)
     if nargin < 3 || isempty(options)
         options = struct();
     end
+    if nargin < 2
+        faceInfo = struct();
+    end
 
     targetSize = get_option(options, 'imageSize', [112, 92]);
     alignInfo = struct();
@@ -16,7 +19,16 @@ function alignInfo = align_face(img, faceInfo, options)
     alignInfo.transformInfo = struct();
     alignInfo.message = '';
 
-    if isempty(faceInfo) || ~isfield(faceInfo, 'faceImage') || isempty(faceInfo.faceImage)
+    if (nargin < 2 || isempty(faceInfo) || ~isstruct(faceInfo) || ...
+            ~isfield(faceInfo, 'faceImage') || isempty(faceInfo.faceImage)) && ...
+            (nargin < 1 || isempty(img))
+        alignInfo.status = 'empty_input';
+        alignInfo.message = '没有可校准的人脸图像。';
+        return;
+    end
+
+    try
+    if isempty(faceInfo) || ~isstruct(faceInfo) || ~isfield(faceInfo, 'faceImage') || isempty(faceInfo.faceImage)
         faceInfo = detect_face(img, options);
     end
 
@@ -52,6 +64,10 @@ function alignInfo = align_face(img, faceInfo, options)
         'srcPoints', srcPoints, ...
         'dstPoints', dstPoints);
     alignInfo.message = 'aligned by MATLAB 3-point affine';
+    catch ME
+        alignInfo.status = 'error';
+        alignInfo.message = ['人脸校准失败: ', ME.message];
+    end
 end
 
 function landmarks = sanitize_landmarks(landmarks, imageSize)
@@ -62,7 +78,8 @@ function landmarks = sanitize_landmarks(landmarks, imageSize)
         'rightEye', [w * 0.68, h * 0.38], ...
         'mouth', [w * 0.50, h * 0.72]);
 
-    if ~isfield(landmarks, 'leftEye') || ~isfield(landmarks, 'rightEye') || ~isfield(landmarks, 'mouth')
+    if ~isstruct(landmarks) || ~isfield(landmarks, 'leftEye') || ...
+            ~isfield(landmarks, 'rightEye') || ~isfield(landmarks, 'mouth')
         landmarks = fallback;
         return;
     end

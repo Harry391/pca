@@ -2,9 +2,12 @@ function params = default_params()
 %DEFAULT_PARAMS Shared default parameters for GUI and model flow.
 
     params = struct();
-    params.defaultPcaDim = 30;
-    params.defaultSvmC = 1.0;
+    params.defaultPcaDim = 120;
+    params.defaultSvmC = 0.03;
     params.imageSize = [112, 92];
-    params.appTitle = 'PCA Face Recognition System';
+    params.svmMaxEpochs = 1400;
+    params.svmLearningRate = 0.035;
+    params.svmLearningRateDecay = 0.008;
+    params.appTitle = '软萌线性代数人脸识别系统';
 end
 

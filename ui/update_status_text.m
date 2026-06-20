@@ -4,6 +4,14 @@ function update_status_text(textHandle, messageLines)
     if isempty(textHandle) || ~isvalid(textHandle)
         return;
     end
-    textHandle.Value = messageLines;
+    if isprop(textHandle, 'Value')
+        textHandle.Value = messageLines;
+    elseif isprop(textHandle, 'Text')
+        if iscell(messageLines)
+            textHandle.Text = strjoin(string(messageLines), newline);
+        else
+            textHandle.Text = char(messageLines);
+        end
+    end
 end
 
