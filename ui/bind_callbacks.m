@@ -26,14 +26,13 @@ function bind_callbacks(handles)
     pre.StopCameraButton.ButtonPushedFcn = @(~, ~) on_stop_camera(handles);
     pre.TransformPreviewButton.ButtonPushedFcn = @(~, ~) set_pre_status(handles, '状态：可通过右侧参数按钮展示平移、缩放、旋转等几何运算。');
 
-    rec.TrainButton.ButtonPushedFcn = @(~, ~) on_recognition_action(handles, '训练 / 重新训练模型', @action_static_predict);
+    rec.TrainButton.ButtonPushedFcn = @(~, ~) on_train_model(handles);
     rec.BatchTestButton.ButtonPushedFcn = @(~, ~) on_recognition_action(handles, '测试集全量识别', @action_batch_predict);
     rec.StaticPredictButton.ButtonPushedFcn = @(~, ~) on_recognition_action(handles, '选择单张测试图识别', @action_static_predict);
     rec.RealtimePredictButton.ButtonPushedFcn = @(~, ~) on_recognition_action(handles, '实时识别', @action_realtime_predict);
     rec.StopRealtimeButton.ButtonPushedFcn = @(~, ~) set_rec_status(handles, '状态：实时识别已请求停止。');
     rec.AverageFaceButton.ButtonPushedFcn = @(~, ~) on_average_face(handles);
     rec.EigenfaceButton.ButtonPushedFcn = @(~, ~) on_eigenfaces(handles);
-    rec.PreprocessCompareButton.ButtonPushedFcn = @(~, ~) set_rec_status(handles, "状态：创新小项目策略 = " + string(rec.CompareModeDropDown.Value));
     rec.ReplayToPreprocessButton.ButtonPushedFcn = @(~, ~) on_recognition_action(handles, '送入预处理页复现', @action_replay_to_preprocess);
 end
 
@@ -599,6 +598,38 @@ function on_recognition_action(handles, actionName, actionFcn)
     append_status_log(handles, message);
 end
 
+function on_train_model(handles)
+    state = get_state(handles);
+    pcaDim = handles.Recognition.PcaDimEdit.Value;
+    svmC = handles.Recognition.SvmCEdit.Value;
+
+    trainDir = get_optional_field(state, 'defaultTrainDir', fullfile(state.rootDir, 'data', 'train'));
+    if ~isfolder(trainDir)
+        fallbackDir = fullfile(state.rootDir, 'data');
+        if isfolder(fallbackDir)
+            trainDir = fallbackDir;
+        end
+    end
+
+    try
+        model = train_pca_svm_model(trainDir, pcaDim, svmC, struct());
+        state.model = model;
+        set_state(handles, state);
+        update_param_text(handles, model, trainDir, pcaDim, svmC);
+
+        status = string(get_optional_field(model, 'status', "ok"));
+        message = string(get_optional_field(model, 'message', "模型训练完成。"));
+        if status == "todo"
+            message = "B 同学训练接口未完成：" + message;
+        end
+        set_rec_status(handles, "状态：" + message);
+        append_status_log(handles, "训练 / 重新训练模型：" + message);
+    catch ME
+        set_rec_status(handles, "状态：模型训练失败: " + string(ME.message));
+        append_status_log(handles, "模型训练失败: " + string(ME.message));
+    end
+end
+
 function apply_recognition_result(handles, result, actionName)
     if isfield(result, 'appState') && isstruct(result.appState) && ~isempty(result.appState)
         set_state(handles, result.appState);
@@ -628,6 +659,44 @@ function apply_recognition_result(handles, result, actionName)
     if isfield(result, 'batchTableData') && ~isempty(result.batchTableData)
         update_result_table(handles.Recognition.BatchResultTable, result.batchTableData);
     end
+
+    state = get_state(handles);
+    if isfield(state, 'model') && isstruct(state.model) && ~isempty(state.model)
+        pcaDim = handles.Recognition.PcaDimEdit.Value;
+        svmC = handles.Recognition.SvmCEdit.Value;
+        trainDir = get_optional_field(state.model, 'trainDir', get_optional_field(state, 'defaultTrainDir', ""));
+        update_param_text(handles, state.model, trainDir, pcaDim, svmC);
+    end
+end
+
+function update_param_text(handles, model, trainDir, pcaDim, svmC)
+    status = string(get_optional_field(model, 'status', "ok"));
+    message = string(get_optional_field(model, 'message', ""));
+    imageSize = get_optional_field(model, 'imageSize', []);
+    if isempty(imageSize)
+        sizeText = "112x92";
+    elseif numel(imageSize) >= 2
+        sizeText = sprintf('%dx%d', imageSize(1), imageSize(2));
+    else
+        sizeText = string(imageSize);
+    end
+
+    labels = get_optional_field(model, 'labels', {});
+    if isempty(labels)
+        labelCount = 0;
+    else
+        labelCount = numel(labels);
+    end
+
+    handles.Recognition.ParamText.Value = {
+        char("PCA 维数: " + string(pcaDim))
+        char("SVM C: " + string(svmC))
+        char("模型状态: " + status)
+        char("训练目录: " + string(trainDir))
+        char("训练类别数: " + string(labelCount))
+        char("输入尺寸: " + string(sizeText))
+        char("接口信息: " + message)
+    };
 end
 
 function on_average_face(handles)

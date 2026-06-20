@@ -24,13 +24,13 @@ function handles = create_recognition_tab(parentTab, theme, assets, params)
 
     leftPanel = create_cute_panel(root, 'Recognition Control Block', theme, theme.colors.mintGreen);
     centerPanel = create_cute_panel(root, 'Recognition Display Area', theme, theme.colors.cream);
-    rightPanel = create_cute_panel(root, 'Result & Parameter Block', theme, theme.colors.sakuraPink);
+    rightPanel = create_cute_panel(root, 'Result & Parameter Block', theme, theme.colors.paleSkyBlue);
     handles.LeftPanel = leftPanel;
     handles.CenterPanel = centerPanel;
     handles.RightPanel = rightPanel;
 
-    leftGrid = uigridlayout(leftPanel, [12 2]);
-    leftGrid.RowHeight = {32, 32, 40, 40, 40, 40, 40, 40, 40, 44, 116, '1x'};
+    leftGrid = uigridlayout(leftPanel, [11 2]);
+    leftGrid.RowHeight = {32, 32, 40, 40, 40, 40, 40, 40, 44, 116, '1x'};
     leftGrid.ColumnWidth = {'1x', '1x'};
     leftGrid.Padding = [14 18 14 14];
     leftGrid.RowSpacing = 8;
@@ -51,32 +51,31 @@ function handles = create_recognition_tab(parentTab, theme, assets, params)
     handles.SvmCEdit.Layout.Row = 2;
     handles.SvmCEdit.Layout.Column = 2;
 
-    handles.TrainButton = cuteButton(leftGrid, '训练 / 重新训练模型', theme, 'primary', 3, [1 2]);
-    handles.BatchTestButton = cuteButton(leftGrid, '测试集全量识别', theme, 'blue', 4, [1 2]);
-    handles.StaticPredictButton = cuteButton(leftGrid, '选择单张测试图识别', theme, 'blue', 5, [1 2]);
+    handles.TrainButton = cuteButton(leftGrid, '训练 / 重新训练模型', theme, 'green', 3, [1 2]);
+    handles.BatchTestButton = cuteButton(leftGrid, '测试集全量识别', theme, 'green', 4, [1 2]);
+    handles.StaticPredictButton = cuteButton(leftGrid, '选择单张测试图识别', theme, 'green', 5, [1 2]);
     handles.RealtimePredictButton = cuteButton(leftGrid, '实时识别', theme, 'green', 6, 1);
-    handles.StopRealtimeButton = cuteButton(leftGrid, '停止实时识别', theme, 'danger', 6, 2);
-    handles.AverageFaceButton = cuteButton(leftGrid, '显示平均脸', theme, 'primary', 7, 1);
-    handles.EigenfaceButton = cuteButton(leftGrid, '显示特征脸', theme, 'primary', 7, 2);
-    handles.PreprocessCompareButton = cuteButton(leftGrid, '预处理策略对比', theme, 'pink', 8, [1 2]);
-    handles.ReplayToPreprocessButton = cuteButton(leftGrid, '送入预处理页复现', theme, 'pink', 9, [1 2]);
+    handles.StopRealtimeButton = cuteButton(leftGrid, '停止实时识别', theme, 'green', 6, 2);
+    handles.AverageFaceButton = cuteButton(leftGrid, '显示平均脸', theme, 'green', 7, 1);
+    handles.EigenfaceButton = cuteButton(leftGrid, '显示特征脸', theme, 'green', 7, 2);
+    handles.ReplayToPreprocessButton = cuteButton(leftGrid, '送入预处理页复现', theme, 'green', 8, [1 2]);
 
     hint = uilabel(leftGrid, ...
-        'Text', '验收顺序：全量测试 -> 单张测试 -> 实时采集 -> PCA/SVM 展示 -> 创新对比', ...
+        'Text', '验收顺序：全量测试 -> 单张测试 -> 实时采集 -> PCA/SVM 展示', ...
         'WordWrap', 'on', ...
         'FontColor', theme.colors.mutedInk, ...
         'FontWeight', 'bold');
-    hint.Layout.Row = 10;
+    hint.Layout.Row = 9;
     hint.Layout.Column = [1 2];
 
     mascotPanel = create_cute_panel(leftGrid, 'Mascot Status', theme, [0.88 1.00 0.78]);
-    mascotPanel.Layout.Row = 11;
+    mascotPanel.Layout.Row = 10;
     mascotPanel.Layout.Column = [1 2];
     mascotGrid = uigridlayout(mascotPanel, [1 2]);
     mascotGrid.ColumnWidth = {92, '1x'};
     mascotGrid.Padding = [10 8 10 10];
     mascotGrid.BackgroundColor = mascotPanel.BackgroundColor;
-    handles.MascotControl = uiimage(mascotGrid, 'ImageSource', assets.loading, 'ScaleMethod', 'fit');
+    handles.MascotControl = uiimage(mascotGrid, 'ImageSource', assets.leftCorner, 'ScaleMethod', 'fit');
     handles.MascotControl.Layout.Column = 1;
     handles.ControlTipText = uitextarea(mascotGrid, ...
         'Value', {'请选择训练集和测试集后开始。', '识别过程中的错误会显示在右侧状态区。'}, ...
@@ -140,22 +139,22 @@ function handles = create_recognition_tab(parentTab, theme, assets, params)
     handles.RecognitionStatusLabel.Layout.Row = 4;
     handles.RecognitionStatusLabel.Layout.Column = [1 3];
 
-    rightGrid = uigridlayout(rightPanel, [7 2]);
-    rightGrid.RowHeight = {118, 96, 108, 136, 118, 86, '1x'};
+    rightGrid = uigridlayout(rightPanel, [6 2]);
+    rightGrid.RowHeight = {126, 108, 136, 176, 132, '1x'};
     rightGrid.ColumnWidth = {'1x', '1x'};
     rightGrid.Padding = [14 18 14 14];
     rightGrid.RowSpacing = 10;
     rightGrid.ColumnSpacing = 10;
-    rightGrid.BackgroundColor = theme.colors.sakuraPink;
+    rightGrid.BackgroundColor = theme.colors.paleSkyBlue;
 
-    resultPanel = create_cute_panel(rightGrid, 'single result block', theme, [0.98 0.76 0.83]);
+    resultPanel = create_cute_panel(rightGrid, 'single result block', theme, [0.88 0.96 1.00]);
     resultPanel.Layout.Row = 1;
     resultPanel.Layout.Column = [1 2];
     resultGrid = uigridlayout(resultPanel, [1 2]);
     resultGrid.ColumnWidth = {96, '1x'};
     resultGrid.Padding = [10 8 10 10];
     resultGrid.BackgroundColor = resultPanel.BackgroundColor;
-    handles.MascotResult = uiimage(resultGrid, 'ImageSource', assets.success, 'ScaleMethod', 'fit');
+    handles.MascotResult = uiimage(resultGrid, 'ImageSource', assets.rightCornerBlue, 'ScaleMethod', 'fit');
     handles.MascotResult.Layout.Column = 1;
     handles.SingleResultText = uitextarea(resultGrid, ...
         'Value', {'预测姓名: -', 'Top-3: -', '单张耗时: -'}, ...
@@ -164,7 +163,7 @@ function handles = create_recognition_tab(parentTab, theme, assets, params)
         'BackgroundColor', theme.colors.cream);
     handles.SingleResultText.Layout.Column = 2;
 
-    batchPanel = create_cute_panel(rightGrid, 'batch summary block', theme, [1.00 0.86 0.88]);
+    batchPanel = create_cute_panel(rightGrid, 'batch summary block', theme, [0.88 0.96 1.00]);
     batchPanel.Layout.Row = 2;
     batchPanel.Layout.Column = [1 2];
     batchGrid = uigridlayout(batchPanel, [1 1]);
@@ -176,18 +175,22 @@ function handles = create_recognition_tab(parentTab, theme, assets, params)
         'FontName', theme.fonts.body, ...
         'BackgroundColor', theme.colors.cream);
 
-    paramsPanel = create_cute_panel(rightGrid, 'PCA / SVM parameter block', theme, theme.colors.softLavender);
+    paramsPanel = create_cute_panel(rightGrid, 'PCA / SVM parameter block', theme, [0.88 0.96 1.00]);
     paramsPanel.Layout.Row = 3;
     paramsPanel.Layout.Column = [1 2];
-    paramsGrid = uigridlayout(paramsPanel, [4 2]);
-    paramsGrid.RowHeight = {'1x', '1x', '1x', '1x'};
-    paramsGrid.ColumnWidth = {'1x', '1x'};
+    paramsGrid = uigridlayout(paramsPanel, [1 1]);
     paramsGrid.Padding = [10 8 10 10];
     paramsGrid.BackgroundColor = paramsPanel.BackgroundColor;
-    addPair(paramsGrid, 'PCA 维数', string(params.defaultPcaDim), 1);
-    addPair(paramsGrid, 'SVM C', string(params.defaultSvmC), 2);
-    addPair(paramsGrid, '模型状态', '未训练', 3);
-    addPair(paramsGrid, '输入尺寸', sprintf('%dx%d', params.imageSize(1), params.imageSize(2)), 4);
+    handles.ParamText = uitextarea(paramsGrid, ...
+        'Value', {
+            ['PCA 维数: ', char(string(params.defaultPcaDim))]
+            ['SVM C: ', char(string(params.defaultSvmC))]
+            '模型状态: 未训练'
+            ['输入尺寸: ', sprintf('%dx%d', params.imageSize(1), params.imageSize(2))]
+        }, ...
+        'Editable', 'off', ...
+        'FontName', theme.fonts.body, ...
+        'BackgroundColor', theme.colors.cream);
 
     tablePanel = create_cute_panel(rightGrid, 'test result table', theme, theme.colors.cream);
     tablePanel.Layout.Row = 4;
@@ -199,7 +202,7 @@ function handles = create_recognition_tab(parentTab, theme, assets, params)
         'Data', cell(0, 5), ...
         'ColumnName', {'真实姓名', '预测姓名', '正确', '耗时ms', '图片路径'});
 
-    realtimePanel = create_cute_panel(rightGrid, 'realtime 10 people block', theme, [1.00 0.92 0.95]);
+    realtimePanel = create_cute_panel(rightGrid, 'realtime 10 people block', theme, [0.88 0.96 1.00]);
     realtimePanel.Layout.Row = 5;
     realtimePanel.Layout.Column = [1 2];
     realtimeGrid = uigridlayout(realtimePanel, [1 1]);
@@ -209,26 +212,8 @@ function handles = create_recognition_tab(parentTab, theme, assets, params)
         'Data', cell(10, 4), ...
         'ColumnName', {'序号', '识别来源', '识别结果', '备注'});
 
-    innovationPanel = create_cute_panel(rightGrid, 'innovation compare block', theme, [0.88 0.96 1.00]);
-    innovationPanel.Layout.Row = 6;
-    innovationPanel.Layout.Column = [1 2];
-    innovationGrid = uigridlayout(innovationPanel, [1 2]);
-    innovationGrid.Padding = [10 8 10 10];
-    innovationGrid.BackgroundColor = innovationPanel.BackgroundColor;
-    handles.CompareModeDropDown = uidropdown(innovationGrid, ...
-        'Items', {'仅灰度化', '灰度化+均衡化', '美白拉亮'}, ...
-        'Value', '灰度化+均衡化', ...
-        'BackgroundColor', theme.colors.softYellow);
-    handles.CompareModeDropDown.Layout.Column = 1;
-    handles.CompareText = uilabel(innovationGrid, ...
-        'Text', '创新小项目：预处理策略对比', ...
-        'WordWrap', 'on', ...
-        'FontWeight', 'bold', ...
-        'FontColor', theme.colors.ink);
-    handles.CompareText.Layout.Column = 2;
-
     statusPanel = create_cute_panel(rightGrid, 'status log', theme, theme.colors.cream);
-    statusPanel.Layout.Row = 7;
+    statusPanel.Layout.Row = 6;
     statusPanel.Layout.Column = [1 2];
     statusGrid = uigridlayout(statusPanel, [1 1]);
     statusGrid.Padding = [8 8 8 8];
@@ -245,13 +230,4 @@ function btn = cuteButton(parent, text, theme, variant, row, col)
     btn.Layout.Row = row;
     btn.Layout.Column = col;
     apply_cute_button_style(btn, theme, variant);
-end
-
-function addPair(parent, leftText, rightText, row)
-    left = uilabel(parent, 'Text', leftText, 'FontWeight', 'bold');
-    left.Layout.Row = row;
-    left.Layout.Column = 1;
-    right = uilabel(parent, 'Text', rightText);
-    right.Layout.Row = row;
-    right.Layout.Column = 2;
 end
