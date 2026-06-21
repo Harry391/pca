@@ -8,6 +8,7 @@ function result = run_single_image_predict(imagePath)
     rootDir = fileparts(mfilename('fullpath'));
     addpath(genpath(rootDir));
     add_runtime_services(rootDir);
+    runtimeCleanup = onCleanup(@() cleanup_runtime_services(rootDir)); %#ok<NASGU>
 
     if nargin < 1 || isempty(imagePath)
         [fileName, fileDir] = uigetfile( ...

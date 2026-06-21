@@ -500,15 +500,26 @@ function timerObj = stop_camera_timer(timerObj)
 end
 
 function on_close_figure(handles, fig)
+    rootDir = '';
     try
         state = get_state(handles);
+        rootDir = get_optional_field(state, 'rootDir', '');
         stop_manual_face_roi(state);
         stop_embedded_realtime(state);
         stop_camera_timer(get_optional_field(state, 'cameraTimer', []));
         camera_stop(get_optional_field(state, 'camera', []));
     catch
     end
-    delete(fig);
+
+    try
+        delete(fig);
+    catch
+    end
+
+    try
+        cleanup_runtime_services(rootDir);
+    catch
+    end
 end
 
 function state = stop_manual_face_roi(state)

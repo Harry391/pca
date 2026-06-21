@@ -7,6 +7,7 @@ function run_realtime_matlab_gui_ready(maxFrames)
     rootDir = fileparts(mfilename('fullpath'));
     addpath(genpath(rootDir));
     add_runtime_services(rootDir);
+    runtimeCleanup = onCleanup(@() cleanup_runtime_services(rootDir)); %#ok<NASGU>
 
     if nargin < 1 || isempty(maxFrames)
         maxFrames = inf;
