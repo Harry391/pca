@@ -7,6 +7,7 @@ function result = run_single_image_predict(imagePath)
 
     rootDir = fileparts(mfilename('fullpath'));
     addpath(genpath(rootDir));
+    add_runtime_services(rootDir);
 
     if nargin < 1 || isempty(imagePath)
         [fileName, fileDir] = uigetfile( ...
@@ -80,7 +81,7 @@ function model = load_or_train_model(rootDir)
     options.svmLearningRate = 0.035;
     options.svmLearningRateDecay = 0.008;
     options.ignoredLabels = excluded_labels();
-    trainDir = fullfile(rootDir, 'data', 'python_tight_masked_pca_svm_split_v11', 'train');
+    trainDir = fullfile(rootDir, 'data', 'tight_masked_pca_svm_split_v11', 'train');
     model = train_pca_svm_model(trainDir, 120, 0.03, options);
     if ~strcmp(model.status, 'ok')
         error('Model training failed: %s', model.message);
@@ -95,23 +96,16 @@ function [alignedImage, alignStatus, alignedPath] = align_input_image(rootDir, i
     end
 
     alignedPath = fullfile(tempDir, 'aligned_input.jpg');
-    scriptPath = fullfile(rootDir, 'preprocess', 'align_single_face.py');
-    taskFile = fullfile(fileparts(rootDir), 'face_landmarker.task');
-
-    command = sprintf('python "%s" --input "%s" --output "%s" --task-file "%s"', ...
-        scriptPath, imagePath, alignedPath, taskFile);
-    [status, cmdout] = system(command);
-    if status ~= 0 || ~isfile(alignedPath)
+    [alignedImage, alignStatus, alignmentLog] = runtime_align_single_face( ...
+        rootDir, imagePath, alignedPath, [112, 92]);
+    if isempty(alignedImage)
         warning('SingleImagePredict:AlignFailed', ...
-            'Automatic alignment failed, fallback to direct preprocessing.\n%s', cmdout);
+            'Automatic alignment failed, fallback to direct preprocessing.\n%s', alignmentLog);
         alignStatus = 'fallback_preprocess_only';
         alignedImage = preprocess_for_model(imagePath, struct('imageSize', [112, 92])).image;
         alignedPath = '';
         return;
     end
-
-    alignStatus = strtrim(cmdout);
-    alignedImage = imread(alignedPath);
 end
 
 function diagnostics = compute_similarity_diagnostics(model, alignedImage, topK)

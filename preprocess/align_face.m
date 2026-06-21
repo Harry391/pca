@@ -1,7 +1,7 @@
 function alignInfo = align_face(img, faceInfo, options)
 %ALIGN_FACE MATLAB-only 3-point affine alignment.
 %
-% This mirrors the Python MediaPipe path structurally: left eye, right eye
+% This mirrors the landmark runtime path structurally: left eye, right eye
 % and mouth are mapped to fixed target locations, then converted to
 % normalized grayscale.
 

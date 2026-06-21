@@ -1,5 +1,5 @@
 function result = realtime_align_and_predict(rootDir, model, frame, options)
-%REALTIME_ALIGN_AND_PREDICT Align one MATLAB-captured frame via Python, then predict.
+%REALTIME_ALIGN_AND_PREDICT Align one MATLAB-captured frame, then predict.
 
     if nargin < 4 || isempty(options)
         options = struct();
@@ -14,21 +14,17 @@ function result = realtime_align_and_predict(rootDir, model, frame, options)
     alignedPath = fullfile(tempDir, 'current_aligned.jpg');
     imwrite(frame, framePath);
 
-    scriptPath = fullfile(rootDir, 'preprocess', 'align_single_face.py');
-    taskFile = fullfile(fileparts(rootDir), 'face_landmarker.task');
-    command = sprintf('python "%s" --input "%s" --output "%s" --task-file "%s"', ...
-        scriptPath, framePath, alignedPath, taskFile);
+    add_runtime_services(rootDir);
+    [alignedImage, alignStatus, alignmentLog] = runtime_align_single_face( ...
+        rootDir, framePath, alignedPath, model.imageSize);
 
-    [status, cmdout] = system(command);
-    if status ~= 0 || ~isfile(alignedPath)
+    if isempty(alignedImage)
         input = preprocess_for_model(frame, struct('imageSize', model.imageSize));
         pred = predict_face_identity(model, input.image, options);
         alignStatus = 'fallback_preprocess_only';
         alignedImage = input.image;
         faceBox = center_square_box(size(frame), 0.72);
     else
-        alignStatus = last_nonempty_line(cmdout);
-        alignedImage = imread(alignedPath);
         pred = predict_face_identity(model, alignedImage, options);
         faceBox = detect_face_box_fallback(frame);
     end
@@ -43,17 +39,7 @@ function result = realtime_align_and_predict(rootDir, model, frame, options)
     result.alignedFace = alignedImage;
     result.elapsedMs = pred.elapsedMs;
     result.alignStatus = alignStatus;
-    result.pythonLog = cmdout;
-end
-
-function text = last_nonempty_line(cmdout)
-    parts = regexp(strtrim(cmdout), '\r\n|\n|\r', 'split');
-    parts = parts(~cellfun(@isempty, parts));
-    if isempty(parts)
-        text = 'aligned';
-    else
-        text = strtrim(parts{end});
-    end
+    result.alignmentLog = alignmentLog;
 end
 
 function box = detect_face_box_fallback(frame)

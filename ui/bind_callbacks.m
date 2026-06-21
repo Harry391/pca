@@ -24,12 +24,12 @@ function bind_callbacks(handles)
     pre.FaceAlignButton.ButtonPushedFcn = @(~, ~) on_align_face(handles);
     pre.StartCameraButton.ButtonPushedFcn = @(~, ~) on_start_camera(handles);
     pre.StopCameraButton.ButtonPushedFcn = @(~, ~) on_stop_camera(handles);
-    pre.TransformPreviewButton.ButtonPushedFcn = @(~, ~) set_pre_status(handles, '状态：可通过右侧参数按钮展示平移、缩放、旋转等几何运算。');
+    pre.TransformPreviewButton.ButtonPushedFcn = @(~, ~) on_detect_face(handles);
 
     rec.TrainButton.ButtonPushedFcn = @(~, ~) on_train_model(handles);
     rec.BatchTestButton.ButtonPushedFcn = @(~, ~) on_recognition_action(handles, '测试集全量识别', @action_batch_predict);
     rec.StaticPredictButton.ButtonPushedFcn = @(~, ~) on_recognition_action(handles, '选择单张测试图识别', @action_static_predict);
-    rec.RealtimePredictButton.ButtonPushedFcn = @(~, ~) on_recognition_action(handles, '识别当前图像 / 摄像头帧', @action_realtime_predict);
+    rec.RealtimePredictButton.ButtonPushedFcn = @(~, ~) on_try_realtime_recognition(handles);
     rec.AverageFaceButton.ButtonPushedFcn = @(~, ~) on_average_face(handles);
     rec.EigenfaceButton.ButtonPushedFcn = @(~, ~) on_eigenfaces(handles);
     rec.ReplayToPreprocessButton.ButtonPushedFcn = @(~, ~) on_recognition_action(handles, '查看预处理过程', @action_replay_to_preprocess);
@@ -57,6 +57,7 @@ function on_import_image(handles)
     state.currentFaceRoiListeners = [];
     state.currentAlignInfo = struct();
     state.currentAlignedFace = [];
+    state = clear_service_preprocess_mode(state);
     set_state(handles, state);
 
     update_axes_image(handles.Preprocess.InputAxes, img, '原始图像');
@@ -81,33 +82,47 @@ end
 
 function on_gray_image(handles)
     state = get_state(handles);
-    [img, sourceLabel] = current_preprocess_base_image(state);
-    if isempty(img)
-        set_pre_status(handles, '状态：请先输入图像。');
-        return;
+    if is_service_preprocess_state(state) && isfield(state, 'serviceGrayFace') && ~isempty(state.serviceGrayFace)
+        grayImg = state.serviceGrayFace;
+        sourceLabel = "实时服务 配准灰度人脸";
+    else
+        [img, sourceLabel] = current_preprocess_base_image(state);
+        if isempty(img)
+            set_pre_status(handles, '状态：请先输入图像。');
+            return;
+        end
+        grayImg = convert_to_gray(img);
     end
 
-    grayImg = convert_to_gray(img);
     state.currentGrayImage = grayImg;
     state.currentProcessedImage = grayImg;
+    state.currentPreprocessBaseImage = grayImg;
+    state.currentPreprocessBaseLabel = sourceLabel;
     set_state(handles, state);
-    update_axes_image(handles.Preprocess.ProcessedAxes, grayImg, '灰度图像');
+    update_axes_image(handles.Preprocess.ProcessedAxes, grayImg, char(sourceLabel));
     refresh_image_info(handles, grayImg, "已对" + sourceLabel + "完成灰度变换。");
 end
 
 function on_equalize_image(handles)
     state = get_state(handles);
-    [img, sourceLabel] = current_preprocess_base_image(state);
-    if isempty(img)
-        set_pre_status(handles, '状态：请先输入图像。');
-        return;
+    if is_service_preprocess_state(state) && isfield(state, 'serviceEqualizedFace') && ~isempty(state.serviceEqualizedFace)
+        eqImg = state.serviceEqualizedFace;
+        sourceLabel = "实时服务 CLAHE 均衡化人脸";
+    else
+        [img, sourceLabel] = current_preprocess_base_image(state);
+        if isempty(img)
+            set_pre_status(handles, '状态：请先输入图像。');
+            return;
+        end
+        eqImg = equalize_image(img);
     end
 
-    eqImg = equalize_image(img);
     state.currentGrayImage = eqImg;
     state.currentProcessedImage = eqImg;
+    state.currentPreprocessBaseImage = eqImg;
+    state.currentPreprocessBaseLabel = sourceLabel;
     set_state(handles, state);
-    update_axes_image(handles.Preprocess.ProcessedAxes, eqImg, '均衡化图像');
+    update_axes_image(handles.Preprocess.ProcessedAxes, eqImg, char(sourceLabel));
     refresh_image_info(handles, eqImg, "已对" + sourceLabel + "完成直方图均衡化。");
 end
 
@@ -310,6 +325,8 @@ end
 
 function on_start_camera(handles)
     state = get_state(handles);
+    state = stop_embedded_realtime(state);
+    state = clear_service_preprocess_mode(state);
     state.cameraTimer = stop_camera_timer(get_optional_field(state, 'cameraTimer', []));
     state = stop_manual_face_roi(state);
     state.currentFaceInfo = struct();
@@ -373,6 +390,7 @@ end
 function on_manual_select_face(handles)
     state = get_state(handles);
     state.cameraTimer = stop_camera_timer(get_optional_field(state, 'cameraTimer', []));
+    state = clear_service_preprocess_mode(state);
     state = stop_manual_face_roi(state);
     set_state(handles, state);
 
@@ -485,6 +503,7 @@ function on_close_figure(handles, fig)
     try
         state = get_state(handles);
         stop_manual_face_roi(state);
+        stop_embedded_realtime(state);
         stop_camera_timer(get_optional_field(state, 'cameraTimer', []));
         camera_stop(get_optional_field(state, 'camera', []));
     catch
@@ -522,16 +541,33 @@ function on_detect_face(handles)
         return;
     end
 
-    faceInfo = detect_face(img, struct());
+    storedFaceInfo = get_optional_field(state, 'currentFaceInfo', struct());
+    if isstruct(storedFaceInfo) && isfield(storedFaceInfo, 'status') && ...
+            string(storedFaceInfo.status) == "ok" && isfield(storedFaceInfo, 'faceImage') && ...
+            ~isempty(storedFaceInfo.faceImage)
+        faceInfo = storedFaceInfo;
+        if is_service_preprocess_state(state)
+            faceInfo.message = "已显示 实时服务 MediaPipe 人脸检测框。";
+        else
+            faceInfo.message = "已显示实时采集保存的人脸检测框。";
+        end
+    else
+        state = clear_service_preprocess_mode(state);
+        faceInfo = detect_face(img, struct());
+    end
     state.currentFaceInfo = faceInfo;
     state.currentFaceBox = faceInfo.faceBox;
     if isfield(faceInfo, 'faceImage') && ~isempty(faceInfo.faceImage)
         state.currentProcessedImage = faceInfo.faceImage;
         state.currentPreprocessBaseImage = faceInfo.faceImage;
-        state.currentPreprocessBaseLabel = "检测到的人脸";
+        if is_service_preprocess_state(state)
+            state.currentPreprocessBaseLabel = "实时服务 检测到的人脸";
+        else
+            state.currentPreprocessBaseLabel = "检测到的人脸";
+        end
         state.currentRestoreImage = faceInfo.faceImage;
-        state.currentRestoreLabel = "检测到的人脸";
-        update_axes_image(handles.Preprocess.ProcessedAxes, faceInfo.faceImage, '检测到的人脸');
+        state.currentRestoreLabel = state.currentPreprocessBaseLabel;
+        update_axes_image(handles.Preprocess.ProcessedAxes, faceInfo.faceImage, char(state.currentPreprocessBaseLabel));
     end
     set_state(handles, state);
 
@@ -557,21 +593,33 @@ function on_align_face(handles)
 
     faceInfo = get_optional_field(state, 'currentFaceInfo', struct());
     if isempty(fieldnames(faceInfo)) || ~isfield(faceInfo, 'faceImage') || isempty(faceInfo.faceImage)
-        set_pre_status(handles, '状态：请先点击“人脸框选”，在左侧原图中手动框选人脸。');
+        set_pre_status(handles, '状态：请先点击“人脸检测”或“人脸框选”，得到可校准的人脸。');
         return;
     end
 
-    options = struct('imageSize', [112, 92]);
-    alignInfo = align_face(img, faceInfo, options);
+    if is_service_preprocess_state(state) && isfield(state, 'serviceAlignedFace') && ~isempty(state.serviceAlignedFace)
+        alignInfo = get_optional_field(state, 'currentAlignInfo', struct());
+        alignInfo.status = "ok";
+        alignInfo.alignedFace = state.serviceAlignedFace;
+        alignInfo.message = "实时服务 眼-眼-嘴仿射配准 + CLAHE + 软遮罩";
+        alignInfo.transformInfo = struct('method', "runtime_service_mediapipe_3point_tight_masked");
+    else
+        options = struct('imageSize', [112, 92]);
+        alignInfo = align_face(img, faceInfo, options);
+    end
     state.currentAlignInfo = alignInfo;
     if isfield(alignInfo, 'alignedFace') && ~isempty(alignInfo.alignedFace)
         state.currentAlignedFace = alignInfo.alignedFace;
         state.currentProcessedImage = alignInfo.alignedFace;
         state.currentPreprocessBaseImage = alignInfo.alignedFace;
-        state.currentPreprocessBaseLabel = "校准后人脸";
+        if is_service_preprocess_state(state)
+            state.currentPreprocessBaseLabel = "实时服务 配准后人脸";
+        else
+            state.currentPreprocessBaseLabel = "校准后人脸";
+        end
         state.currentRestoreImage = alignInfo.alignedFace;
-        state.currentRestoreLabel = "校准后人脸";
-        update_axes_image(handles.Preprocess.ProcessedAxes, alignInfo.alignedFace, '校准后人脸');
+        state.currentRestoreLabel = state.currentPreprocessBaseLabel;
+        update_axes_image(handles.Preprocess.ProcessedAxes, alignInfo.alignedFace, char(state.currentPreprocessBaseLabel));
     end
     set_state(handles, state);
     set_pre_status(handles, "状态：" + string(alignInfo.message));
@@ -597,11 +645,245 @@ function on_recognition_action(handles, actionName, actionFcn)
     append_status_log(handles, message);
 end
 
+function on_try_realtime_recognition(handles)
+    state = get_state(handles);
+    existingTimer = get_optional_field(state, 'realtimeBridgeTimer', []);
+    if ~isempty(existingTimer) && isvalid(existingTimer) && strcmp(existingTimer.Running, 'on')
+        state = stop_embedded_realtime(state);
+        set_state(handles, state);
+        set_rec_status(handles, '状态：实时识别已停止。');
+        append_status_log(handles, '实时识别：已停止。');
+        return;
+    end
+
+    try
+        state.cameraTimer = stop_camera_timer(get_optional_field(state, 'cameraTimer', []));
+        camera_stop(get_optional_field(state, 'camera', []));
+        state.camera = [];
+
+        params = struct();
+        params.pcaDim = handles.Recognition.PcaDimEdit.Value;
+        params.svmC = handles.Recognition.SvmCEdit.Value;
+        state.model = ensure_recognition_model(state, params);
+        state.realtimeBridge = start_realtime_camera_service(state.rootDir);
+        state.realtimeLastSequence = -1;
+        state.realtimeFps = 0;
+        state.realtimeLastTic = tic;
+
+        realtimeTimer = timer( ...
+            'ExecutionMode', 'fixedSpacing', ...
+            'Period', 0.10, ...
+            'BusyMode', 'drop', ...
+            'Name', 'PCAFaceEmbeddedRealtimeService', ...
+            'TimerFcn', @(~, ~) on_embedded_realtime_tick(handles));
+        state.realtimeBridgeTimer = realtimeTimer;
+        set_state(handles, state);
+
+        start(realtimeTimer);
+        set_rec_status(handles, '状态：实时识别已启动；再次点击“实时识别”可停止。');
+        append_status_log(handles, '实时识别：已在当前 GUI 中启动。');
+        drawnow;
+    catch ME
+        state = stop_embedded_realtime(get_state(handles));
+        set_state(handles, state);
+        message = "实时识别启动失败: " + string(ME.message);
+        set_rec_status(handles, "状态：" + message);
+        append_status_log(handles, message);
+    end
+end
+
+function on_embedded_realtime_tick(handles)
+    if isempty(handles) || ~isfield(handles, 'Figure') || ~isvalid(handles.Figure)
+        return;
+    end
+
+    state = get_state(handles);
+    bridge = get_optional_field(state, 'realtimeBridge', struct());
+    lastSequence = get_optional_field(state, 'realtimeLastSequence', -1);
+    packet = read_realtime_camera_service_frame(bridge, lastSequence);
+
+    if any(strcmp(packet.status, {'startup_error', 'stopped'}))
+        state = stop_embedded_realtime(state);
+        set_state(handles, state);
+        set_rec_status(handles, "状态：实时识别已停止：" + string(packet.message));
+        append_status_log(handles, "实时识别停止：" + string(packet.message));
+        return;
+    end
+
+    if ~packet.hasNewFrame
+        return;
+    end
+
+    model = get_optional_field(state, 'model', struct());
+    pred = predict_face_identity(model, packet.alignedFace, struct('topK', 3));
+
+    elapsed = toc(get_optional_field(state, 'realtimeLastTic', tic));
+    fps = get_optional_field(state, 'realtimeFps', 0);
+    if elapsed > 0
+        fps = 0.85 * fps + 0.15 * (1 / elapsed);
+    end
+
+    state.realtimeLastSequence = packet.sequence;
+    state.realtimeLastTic = tic;
+    state.realtimeFps = fps;
+    state.currentCameraFrame = packet.rawFrame;
+    state.currentFaceBox = get_optional_field(packet.meta, 'faceBox', []);
+    state.currentAlignedFace = packet.alignedFace;
+    state.realtimeResult = pred;
+    state.lastReplayPackage = build_realtime_replay_package(packet);
+    set_state(handles, state);
+
+    if ~isempty(packet.rawFrame)
+        update_axes_image(handles.Recognition.SourceAxes, packet.rawFrame, sprintf('输入 / 摄像头 | %.1f FPS', fps));
+        draw_face_box(handles.Recognition.SourceAxes, get_optional_field(packet.meta, 'faceBox', []));
+    end
+    update_axes_image(handles.Recognition.FaceAxes, packet.alignedFace, ...
+        sprintf('识别人脸 | %s', char(get_optional_field(packet.meta, 'status', 'runtime_service'))));
+    handles.Recognition.SingleResultText.Value = build_realtime_result_text(pred, packet, fps);
+    update_realtime_records_table(handles, pred, packet, fps);
+
+    topText = format_prediction_topk(pred);
+    set_rec_status(handles, sprintf('状态：实时识别 #%d | %.1f FPS | %s', packet.sequence, fps, topText));
+    drawnow limitrate nocallbacks;
+end
+
+function state = stop_embedded_realtime(state)
+    state.realtimeBridgeTimer = stop_camera_timer(get_optional_field(state, 'realtimeBridgeTimer', []));
+    stop_realtime_camera_service(get_optional_field(state, 'realtimeBridge', struct()));
+    state.realtimeBridge = struct();
+    state.realtimeLastSequence = -1;
+    state.realtimeFps = 0;
+    state.realtimeLastTic = [];
+end
+
+function draw_face_box(ax, faceBox)
+    if isempty(ax) || ~isvalid(ax) || isempty(faceBox) || numel(faceBox) ~= 4
+        return;
+    end
+
+    hold(ax, 'on');
+    rectangle(ax, 'Position', double(faceBox(:))', 'EdgeColor', 'g', 'LineWidth', 2);
+    hold(ax, 'off');
+end
+
+function textLines = build_realtime_result_text(pred, packet, fps)
+    topText = format_prediction_topk(pred);
+    elapsedMs = get_optional_field(pred, 'elapsedMs', []);
+    if isempty(elapsedMs)
+        predTime = '-';
+    else
+        predTime = sprintf('%.2f ms', elapsedMs);
+    end
+
+    alignMs = get_optional_field(packet.meta, 'processMs', []);
+    if isempty(alignMs)
+        alignTime = '-';
+    else
+        alignTime = sprintf('%.2f ms', alignMs);
+    end
+
+    textLines = {
+        char("实时预测: " + string(get_optional_field(pred, 'name', "-")))
+        char("Top-3: " + string(topText))
+        sprintf('摄像头帧: #%d | %.1f FPS', packet.sequence, fps)
+        ['配准耗时: ', alignTime]
+        ['PCA/SVM耗时: ', predTime]
+    };
+end
+
+function text = format_prediction_topk(pred)
+    names = get_optional_field(pred, 'topKNames', {});
+    scores = get_optional_field(pred, 'topKScores', []);
+    if isempty(names)
+        text = 'no prediction';
+        return;
+    end
+
+    topCount = min(3, numel(names));
+    parts = strings(1, topCount);
+    for i = 1:topCount
+        if ~isempty(scores) && numel(scores) >= i
+            parts(i) = string(names{i}) + sprintf('(%.4f)', scores(i));
+        else
+            parts(i) = string(names{i});
+        end
+    end
+    text = char(strjoin(parts, ' | '));
+end
+
+function update_realtime_records_table(handles, pred, packet, fps)
+    if ~isfield(handles.Recognition, 'RealtimeRecordsTable') || isempty(handles.Recognition.RealtimeRecordsTable)
+        return;
+    end
+
+    oldData = handles.Recognition.RealtimeRecordsTable.Data;
+    if isempty(oldData)
+        oldData = cell(10, 4);
+    end
+    newRow = {
+        packet.sequence, ...
+        sprintf('%.1f FPS', fps), ...
+        get_optional_field(pred, 'name', ''), ...
+        char(get_optional_field(packet.meta, 'status', 'runtime_service'))
+    };
+    handles.Recognition.RealtimeRecordsTable.Data = [newRow; oldData(1:max(0, min(size(oldData, 1), 9)), :)];
+end
+
+function replayPkg = build_realtime_replay_package(packet)
+    rawFrame = get_optional_field(packet, 'rawFrame', []);
+    alignedFace = get_optional_field(packet, 'alignedFace', []);
+    faceCrop = get_optional_field(packet, 'faceCrop', []);
+    grayFace = get_optional_field(packet, 'grayFace', []);
+    equalizedFace = get_optional_field(packet, 'equalizedFace', []);
+    alignedColor = get_optional_field(packet, 'alignedColor', []);
+    meta = get_optional_field(packet, 'meta', struct());
+    faceBox = get_optional_field(meta, 'faceBox', []);
+    faceImage = faceCrop;
+    if isempty(faceImage)
+        faceImage = crop_face_from_box(rawFrame, faceBox);
+    end
+    if isempty(faceImage)
+        faceImage = alignedFace;
+    end
+
+    replayPkg = struct();
+    replayPkg.rawFrame = rawFrame;
+    replayPkg.faceBox = faceBox;
+    replayPkg.faceImage = faceImage;
+    replayPkg.faceColorImage = faceImage;
+    replayPkg.serviceAlignedColor = alignedColor;
+    replayPkg.serviceGrayFace = grayFace;
+    replayPkg.serviceEqualizedFace = equalizedFace;
+    replayPkg.serviceAlignedFace = alignedFace;
+    replayPkg.alignedFace = alignedFace;
+    replayPkg.landmarks = struct();
+    replayPkg.preprocessMode = "runtime_service";
+    replayPkg.timestamp = datetime('now');
+    replayPkg.message = char(get_optional_field(meta, 'status', 'runtime_service'));
+end
+
+function faceImage = crop_face_from_box(img, box)
+    faceImage = [];
+    if isempty(img) || isempty(box) || numel(box) ~= 4
+        return;
+    end
+
+    h = size(img, 1);
+    w = size(img, 2);
+    x = max(1, min(w, round(box(1))));
+    y = max(1, min(h, round(box(2))));
+    bw = max(1, round(box(3)));
+    bh = max(1, round(box(4)));
+    bw = min(bw, w - x + 1);
+    bh = min(bh, h - y + 1);
+    faceImage = img(y:y + bh - 1, x:x + bw - 1, :);
+end
+
 function on_train_model(handles)
     state = get_state(handles);
     pcaDim = handles.Recognition.PcaDimEdit.Value;
     svmC = handles.Recognition.SvmCEdit.Value;
-    params = struct('pcaDim', pcaDim, 'svmC', svmC);
+    params = struct('pcaDim', pcaDim, 'svmC', svmC, 'forceTrain', true);
 
     try
         model = ensure_recognition_model(state, params);
@@ -616,7 +898,7 @@ function on_train_model(handles)
             message = "B 同学训练接口未完成：" + message;
         end
         set_rec_status(handles, "状态：" + message);
-        append_status_log(handles, "加载 / 训练模型：" + message);
+        append_status_log(handles, "重新训练模型：" + message);
     catch ME
         set_rec_status(handles, "状态：模型训练失败: " + string(ME.message));
         append_status_log(handles, "模型训练失败: " + string(ME.message));
@@ -638,8 +920,11 @@ function apply_recognition_result(handles, result, actionName)
             isfield(result, 'rawFrame') && ~isempty(result.rawFrame)
         handles.TabGroup.SelectedTab = handles.Preprocess.Parent;
         update_axes_image(handles.Preprocess.InputAxes, result.rawFrame, '拍摄 / 输入原图');
+        if isfield(result, 'faceBox') && ~isempty(result.faceBox)
+            draw_face_box(handles.Preprocess.InputAxes, result.faceBox);
+        end
         if isfield(result, 'alignedFace') && ~isempty(result.alignedFace)
-            update_axes_image(handles.Preprocess.ProcessedAxes, result.alignedFace, '处理后图像');
+            update_axes_image(handles.Preprocess.ProcessedAxes, result.alignedFace, '配准后人脸');
         end
         refresh_image_info(handles, result.rawFrame, result.message);
     end
@@ -665,6 +950,12 @@ end
 function update_param_text(handles, model, trainDir, pcaDim, svmC)
     status = string(get_optional_field(model, 'status', "ok"));
     message = string(get_optional_field(model, 'message', ""));
+    actualPcaDim = get_optional_field(model, 'pcaDim', pcaDim);
+    actualSvmC = get_optional_field(model, 'svmC', svmC);
+    svmParams = get_optional_field(model, 'svmParams', struct());
+    if isstruct(svmParams) && isfield(svmParams, 'C') && ~isempty(svmParams.C)
+        actualSvmC = svmParams.C;
+    end
     imageSize = get_optional_field(model, 'imageSize', []);
     if isempty(imageSize)
         sizeText = "112x92";
@@ -682,8 +973,8 @@ function update_param_text(handles, model, trainDir, pcaDim, svmC)
     end
 
     handles.Recognition.ParamText.Value = {
-        char("PCA 维数: " + string(pcaDim))
-        char("SVM C: " + string(svmC))
+        char("PCA 维数: " + string(actualPcaDim))
+        char("SVM C: " + string(actualSvmC))
         char("模型状态: " + status)
         char("训练目录: " + string(trainDir))
         char("训练类别数: " + string(labelCount))
@@ -810,6 +1101,20 @@ function img = original_source_image(state)
     else
         img = [];
     end
+end
+
+function tf = is_service_preprocess_state(state)
+    tf = isstruct(state) && isfield(state, 'preprocessMode') && ...
+        strcmp(string(state.preprocessMode), "runtime_service");
+end
+
+function state = clear_service_preprocess_mode(state)
+    state.preprocessMode = "";
+    state.serviceFaceImage = [];
+    state.serviceGrayFace = [];
+    state.serviceEqualizedFace = [];
+    state.serviceAlignedFace = [];
+    state.serviceAlignedColor = [];
 end
 
 function value = get_optional_field(s, fieldName, defaultValue)

@@ -1,11 +1,12 @@
 function run_realtime_matlab_gui_ready(maxFrames)
-%RUN_REALTIME_MATLAB_GUI_READY MATLAB-captured realtime recognition with Python alignment.
+%RUN_REALTIME_MATLAB_GUI_READY MATLAB-captured realtime recognition with runtime alignment.
 %
-% Camera capture stays in MATLAB. Each frame is aligned by the Python helper
+% Camera capture stays in MATLAB. Each frame is aligned by the runtime helper
 % before PCA/SVM prediction, matching the project acceptance constraint.
 
     rootDir = fileparts(mfilename('fullpath'));
     addpath(genpath(rootDir));
+    add_runtime_services(rootDir);
 
     if nargin < 1 || isempty(maxFrames)
         maxFrames = inf;
@@ -15,7 +16,7 @@ function run_realtime_matlab_gui_ready(maxFrames)
     cam = open_camera();
     cleanup = onCleanup(@() close_camera(cam));
 
-    fig = figure('Name', 'MATLAB Camera + Python Align + PCA/SVM', ...
+    fig = figure('Name', 'MATLAB Camera + Runtime Align + PCA/SVM', ...
         'NumberTitle', 'off', 'Color', 'w', ...
         'KeyPressFcn', @(src, event) setappdata(src, 'lastKey', event.Key));
     setappdata(fig, 'lastKey', '');

@@ -134,7 +134,7 @@ function handles = create_preprocess_tab(parentTab, theme, assets)
 
     handles.FaceAlignButton = cuteButton(rightGrid, '人脸校准', theme, 'blue', 3, 1);
     handles.FaceSelectButton = cuteButton(rightGrid, '人脸框选', theme, 'blue', 3, 2);
-    handles.TransformPreviewButton = cuteButton(rightGrid, '图像变换功能展示', theme, 'blue', 4, [1 2]);
+    handles.TransformPreviewButton = cuteButton(rightGrid, '人脸检测', theme, 'blue', 4, [1 2]);
 
     transformPanel = create_cute_panel(rightGrid, 'image transform block', theme, [0.88 0.96 1.00]);
     transformPanel.Layout.Row = 5;

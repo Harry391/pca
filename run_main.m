@@ -7,6 +7,7 @@ function appState = run_main()
     addpath(genpath(fullfile(rootDir, 'preprocess')));
     addpath(genpath(fullfile(rootDir, 'ml')));
     addpath(genpath(fullfile(rootDir, 'integration')));
+    add_runtime_services(rootDir);
 
     cfg = app_config(rootDir);
 
@@ -24,6 +25,12 @@ function appState = run_main()
     appState.currentPreprocessBaseLabel = "";
     appState.currentRestoreImage = [];
     appState.currentRestoreLabel = "";
+    appState.preprocessMode = "";
+    appState.serviceFaceImage = [];
+    appState.serviceGrayFace = [];
+    appState.serviceEqualizedFace = [];
+    appState.serviceAlignedFace = [];
+    appState.serviceAlignedColor = [];
     appState.currentGrayImage = [];
     appState.currentProcessedImage = [];
     appState.currentFaceBox = [];
@@ -35,6 +42,11 @@ function appState = run_main()
     appState.currentCameraFrame = [];
     appState.camera = [];
     appState.cameraTimer = [];
+    appState.realtimeBridge = struct();
+    appState.realtimeBridgeTimer = [];
+    appState.realtimeLastSequence = -1;
+    appState.realtimeFps = 0;
+    appState.realtimeLastTic = [];
     appState.lastReplayPackage = struct();
     appState.model = struct();
     appState.batchResult = struct();

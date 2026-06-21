@@ -5,13 +5,13 @@ function report = run_tight_masked_pca_svm_experiment(splitDir)
     addpath(genpath(rootDir));
 
     if nargin < 1 || isempty(splitDir)
-        splitDir = fullfile(rootDir, 'data', 'python_tight_masked_pca_svm_split_v11');
+        splitDir = fullfile(rootDir, 'data', 'tight_masked_pca_svm_split_v11');
     end
 
     trainDir = fullfile(splitDir, 'train');
     testDir = fullfile(splitDir, 'test');
     splitTag = split_tag_from_dir(splitDir);
-    resultsDir = fullfile(rootDir, 'results', ['python_tight_masked_pca_svm_', splitTag]);
+    resultsDir = fullfile(rootDir, 'results', ['tight_masked_pca_svm_', splitTag]);
     modelPath = fullfile(rootDir, 'models', ['pca_svm_tight_masked_', splitTag, '_model.mat']);
 
     if ~isfolder(trainDir) || ~isfolder(testDir)

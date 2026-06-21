@@ -9,6 +9,7 @@
 *.mat
 *.log
 *.tmp
+.runtime/
 results/*
 models/*
 !results/.gitkeep
@@ -17,8 +18,8 @@ data/*
 !data/.gitkeep
 
 # Keep the final high-accuracy PCA+SVM snapshot under version control.
-!data/python_tight_masked_pca_svm_split_v11/
-!data/python_tight_masked_pca_svm_split_v11/**
+!data/tight_masked_pca_svm_split_v11/
+!data/tight_masked_pca_svm_split_v11/**
 !models/pca_svm_tight_masked_v11_model.mat
-!results/python_tight_masked_pca_svm_v11/
-!results/python_tight_masked_pca_svm_v11/**
+!results/tight_masked_pca_svm_v11/
+!results/tight_masked_pca_svm_v11/**
